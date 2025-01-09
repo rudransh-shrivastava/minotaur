@@ -13,9 +13,12 @@ func main() {
 	if port == "" {
 		port = "8081"
 	}
+	delay := os.Getenv("DELAY")
+	if delay == "" {
+		delay = "1000"
+	}
 	http.HandleFunc("/foo", fooHandler)
-	http.HandleFunc("/foo/bar", fooBarHandler)
-	fmt.Println("running server")
+	fmt.Printf("starting a test backend server on port %s with delay %s", port, delay)
 	http.ListenAndServe(":"+port, nil)
 }
 
@@ -29,20 +32,6 @@ func fooHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	time.Sleep(time.Duration(intDelay) * time.Millisecond)
-	fmt.Println("foo handler called at", time.Now())
+	fmt.Println("foo API called at", time.Now())
 	w.Write([]byte("foo"))
-}
-
-func fooBarHandler(w http.ResponseWriter, r *http.Request) {
-	delay := os.Getenv("DELAY")
-	if delay == "" {
-		delay = "1000"
-	}
-	intDelay, err := strconv.Atoi(delay)
-	if err != nil {
-		panic(err)
-	}
-	time.Sleep(time.Duration(intDelay) * time.Millisecond)
-	fmt.Println("foo bar handler called at", time.Now())
-	w.Write([]byte("foo bar"))
 }
