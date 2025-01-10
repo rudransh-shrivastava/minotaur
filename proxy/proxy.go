@@ -26,9 +26,9 @@ func NewProxy(servers []Server) *Proxy {
 	for i := range servers {
 		// Defaults
 		servers[i].Count = 0
-		servers[i].TotalResponses = 0
 		servers[i].Weight = 1
 		servers[i].AvgResponseMs = 1
+		servers[i].TotalResponses = 0
 	}
 	return &Proxy{servers: servers}
 }
@@ -101,7 +101,6 @@ func (p *Proxy) adjustWeightsByResponseTime() {
 		if server.Weight < 1 {
 			server.Weight = 1
 		}
-		fmt.Printf("Server: %s, AvgResponseMs: %d, Weight: %d\n", server.URL, server.AvgResponseMs, server.Weight)
 	}
 }
 
