@@ -1,17 +1,24 @@
 package proxy
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
+
+	redisclient "github.com/rudransh-shrivastava/minotaur/redis_client"
 )
 
 type Proxy struct {
+	RedisClient     *redisclient.RedisClient
 	servers         []Server
 	roundRobinIndex uint64
+	Context         context.Context
 }
 
 type Server struct {
@@ -22,7 +29,7 @@ type Server struct {
 	TotalResponses int64
 }
 
-func NewProxy(servers []Server) *Proxy {
+func NewProxy(ctx context.Context, servers []Server, redisClient *redisclient.RedisClient) *Proxy {
 	for i := range servers {
 		// Defaults
 		servers[i].Count = 0
@@ -30,17 +37,43 @@ func NewProxy(servers []Server) *Proxy {
 		servers[i].AvgResponseMs = 1
 		servers[i].TotalResponses = 0
 	}
-	return &Proxy{servers: servers}
+	return &Proxy{RedisClient: redisClient, servers: servers, Context: ctx}
 }
 
 func (p *Proxy) ProxyHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		p.forwardRequest(w, r)
+		return
+	}
+	cacheKey := r.URL.String()
+
+	cachedResponse, found := p.RedisClient.Get(p.Context, cacheKey)
+	if found {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(cachedResponse))
+		return
+	}
+	respBody, headers, err := p.forwardRequest(w, r)
+	if err != nil {
+		http.Error(w, "Error occurred", http.StatusInternalServerError)
+		return
+	}
+
+	cacheDuration := p.getCacheDuration(headers.Get("Cache-Control"))
+
+	p.RedisClient.Set(p.Context, cacheKey, string(respBody), cacheDuration)
+
+	w.Write(respBody)
+}
+
+func (p *Proxy) forwardRequest(w http.ResponseWriter, r *http.Request) ([]byte, http.Header, error) {
 	nextServer := p.getNextServer()
 	nextServer.Count++
 	nextServerURL := nextServer.URL
 	serverUrl, err := url.Parse(nextServerURL)
 	if err != nil {
 		http.Error(w, "Error occurred", http.StatusInternalServerError)
-		return
+		return nil, nil, err
 	}
 
 	r.Host = serverUrl.Host
@@ -52,14 +85,43 @@ func (p *Proxy) ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	response, err := http.DefaultClient.Do(r)
 	if err != nil {
 		http.Error(w, "Error occurred", http.StatusInternalServerError)
-		return
+		return nil, nil, err
 	}
+
 	responseTime := time.Since(start).Milliseconds()
 	p.updateResponseTime(nextServer, responseTime)
 
 	defer response.Body.Close()
-	w.WriteHeader(http.StatusOK)
-	io.Copy(w, response.Body)
+
+	respBody, err := io.ReadAll(response.Body)
+	if err != nil {
+		http.Error(w, "Error occurred", http.StatusInternalServerError)
+		return nil, nil, err
+	}
+	headers := response.Header.Clone()
+	return respBody, headers, nil
+}
+
+func (p *Proxy) getCacheDuration(cacheControl string) time.Duration {
+	defaultTTL := 10 * time.Second
+
+	if cacheControl == "" {
+		return defaultTTL
+	}
+
+	// Parse Cache-Control header
+	directives := strings.Split(cacheControl, ",")
+	for _, directive := range directives {
+		parts := strings.Split(strings.TrimSpace(directive), "=")
+		if len(parts) == 2 && parts[0] == "max-age" {
+			maxAge, err := strconv.Atoi(parts[1])
+			if err == nil {
+				return time.Duration(maxAge) * time.Second
+			}
+		}
+	}
+
+	return defaultTTL
 }
 
 func (p *Proxy) getNextServer() *Server {

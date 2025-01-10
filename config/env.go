@@ -14,6 +14,7 @@ type Config struct {
 	Port              string
 	LoadBalancingMode string
 	Servers           []string
+	RedisHost         string
 }
 
 var Envs = initConfig()
@@ -32,6 +33,7 @@ func initConfig() Config {
 		Port:              getEnv("PORT", "8080"),
 		LoadBalancingMode: getEnv("LOAD_BALANCING_MODE", "ROUND_ROBIN"),
 		Servers:           servers,
+		RedisHost:         getEnv("REDIS_HOST", "localhost:6379"),
 	}
 }
 
