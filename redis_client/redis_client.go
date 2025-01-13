@@ -2,6 +2,7 @@ package redisclient
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -23,6 +24,7 @@ func NewRedisClient(ctx context.Context) (*RedisClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("successfully connected to redis")
 	return &RedisClient{client: client}, nil
 }
 

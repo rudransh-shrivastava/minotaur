@@ -7,6 +7,6 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o /minotaur
+RUN go build -o /test_server
 
-CMD ["/minotaur"]
+CMD ["/test_server"]
