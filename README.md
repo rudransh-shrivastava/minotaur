@@ -71,10 +71,6 @@ You can copy these default environment variables to your `.env` file. If you don
 ### Run Testing Servers and Redis
 we will use docker-compose to run the testing servers and a redis instance.
 
-**change directory to test_server:**
-```bash
-cd test_server
-```
 **build the containers**
 ```bash
 docker-compose build
@@ -93,10 +89,6 @@ This runs the testing servers(3) and a redis instance for caching.
 ### Run the Reverse Proxy
 Now, its time to run the reverse proxy, the reverse proxy will act as an intermediary between the servers and the clients
 
-**Go back to the root of the project:**
-```bash
-cd ..
-```
 **Build Minotaur:**
 if you have `make` installed you can:
 ```bash
