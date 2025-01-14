@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	Port              string
 	LoadBalancingMode string
 	Servers           []string
 	RedisHost         string
+	SSLKeyPath        string
+	SSLCertPath       string
 }
 
 var Envs = initConfig()
@@ -29,28 +29,19 @@ func initConfig() Config {
 	envServers := getEnv("SERVERS", "localhost:8081")
 	servers := strings.Split(envServers, ",")
 	fmt.Println(servers)
+
 	return Config{
-		Port:              getEnv("PORT", "8080"),
 		LoadBalancingMode: getEnv("LOAD_BALANCING_MODE", "ROUND_ROBIN"),
 		Servers:           servers,
 		RedisHost:         getEnv("REDIS_HOST", "localhost:6379"),
+		SSLKeyPath:        getEnv("SSL_KEY_PATH", "localhost-key.pem"),
+		SSLCertPath:       getEnv("SSL_CERT_PATH", "localhost.pem"),
 	}
 }
 
 func getEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
-	}
-	return fallback
-}
-
-func getEnvInt(key string, fallback int) int {
-	if value, ok := os.LookupEnv(key); ok {
-		v, err := strconv.Atoi(value)
-		if err != nil {
-			log.Fatalf("environment variable %s could not be converted to type int \n error: %v", key, err)
-		}
-		return v
 	}
 	return fallback
 }

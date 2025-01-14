@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
@@ -41,9 +42,18 @@ func main() {
 		fmt.Println("Error creating redis client", err)
 	}
 
+	certFile := config.Envs.SSLCertPath
+	keyFile := config.Envs.SSLKeyPath
+
 	proxy := proxy.NewProxy(ctx, servers, redisClient)
 
-	http.HandleFunc("/", proxy.ProxyHandler)
+	server := &http.Server{
+		Addr:    ":443",
+		Handler: http.HandlerFunc(proxy.ProxyHandler),
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		},
+	}
 
 	go utils.LogLoop(&servers)
 
@@ -51,6 +61,9 @@ func main() {
 		go proxy.StartWeightAdjustment(2 * time.Second)
 	}
 
-	fmt.Println("reverse proxy running on port 8080")
-	http.ListenAndServe(":8080", nil)
+	fmt.Println("starting HTTPS reverse proxy on port 443...")
+	err = server.ListenAndServeTLS(certFile, keyFile)
+	if err != nil {
+		fmt.Println("Error starting server:", err)
+	}
 }
