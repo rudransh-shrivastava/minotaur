@@ -48,7 +48,7 @@ func main() {
 	proxy := proxy.NewProxy(ctx, servers, redisClient)
 
 	server := &http.Server{
-		Addr:    ":443",
+		Addr:    ":" + config.Envs.Port,
 		Handler: http.HandlerFunc(proxy.ProxyHandler),
 		TLSConfig: &tls.Config{
 			MinVersion: tls.VersionTLS12,
@@ -61,7 +61,7 @@ func main() {
 		go proxy.StartWeightAdjustment(2 * time.Second)
 	}
 
-	fmt.Println("starting HTTPS reverse proxy on port 443...")
+	fmt.Printf("Starting HTTPS reverse proxy on port %s ...\n", config.Envs.Port)
 	err = server.ListenAndServeTLS(certFile, keyFile)
 	if err != nil {
 		fmt.Println("Error starting server:", err)

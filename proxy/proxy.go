@@ -171,9 +171,10 @@ func (p *Proxy) StartWeightAdjustment(interval time.Duration) {
 		for {
 			time.Sleep(interval)
 			p.adjustWeightsByResponseTime()
+			fmt.Println("--------------------")
 			fmt.Println("Adjusted server weights:")
 			for _, server := range p.servers {
-				fmt.Printf("Server: %s, AvgResponseMs: %d, Weight: %d\n", server.URL, server.AvgResponseMs, server.Weight)
+				fmt.Printf("server: %s, avg_response_time: %d, weight: %d\n", server.URL, server.AvgResponseMs, server.Weight)
 			}
 		}
 	}()
