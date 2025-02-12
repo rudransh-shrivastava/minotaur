@@ -36,7 +36,7 @@ func (a *App) Start() {
 		return
 	}
 
-	httpClient := newHttpClient()
+	httpClient := proxy.NewHttpClient()
 
 	certFile := config.Envs.SSLCertPath
 	keyFile := config.Envs.SSLKeyPath
@@ -74,17 +74,4 @@ func (a *App) Start() {
 			fmt.Println("Error starting server:", err)
 		}
 	}
-}
-
-func newHttpClient() *http.Client {
-	httpTransport := http.DefaultTransport.(*http.Transport).Clone()
-	httpTransport.MaxIdleConns = 1000
-	httpTransport.MaxConnsPerHost = 1000
-	httpTransport.MaxIdleConnsPerHost = 1000
-
-	httpClient := &http.Client{
-		Timeout:   10 * time.Second,
-		Transport: httpTransport,
-	}
-	return httpClient
 }

@@ -19,8 +19,8 @@ func LogLoop(ctx context.Context, servers *[]proxy.Server) {
 		case <-ticker.C:
 			fmt.Println("++++++++++++++++++++")
 			fmt.Println("Server status")
-			for _, server := range *servers {
-				fmt.Printf("server: %s, count: %d\n", server.URL, server.Count)
+			for i := range *servers {
+				fmt.Printf("server: %s, count: %d\n", (*servers)[i].URL, (*servers)[i].Count)
 			}
 		}
 	}

@@ -20,8 +20,8 @@ services:
       context: ./test_server
       dockerfile: Dockerfile
     container_name: test-server-1
-    expose:
-      - "8081"
+    ports:
+      - "8081:8081"
     environment:
       - PORT=8081
 
@@ -30,8 +30,8 @@ services:
       context: ./test_server
       dockerfile: Dockerfile
     container_name: test-server-2
-    expose:
-      - "8082"
+    ports:
+      - "8082:8082"
     environment:
       - PORT=8082
       - DELAY=200
@@ -41,7 +41,7 @@ services:
       context: ./test_server
       dockerfile: Dockerfile
     container_name: test-server-3
-    expose:
-      - "8083"
+    ports:
+      - "8083:8083"
     environment:
       - PORT=8083

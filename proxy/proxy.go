@@ -9,9 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/sync/singleflight"
-
-	"github.com/cespare/xxhash/v2"
 	redisclient "github.com/rudransh-shrivastava/minotaur/redis_client"
 )
 
@@ -20,8 +17,6 @@ type Proxy struct {
 	HttpClient      *http.Client
 	servers         []Server
 	serverLock      sync.RWMutex
-	reqGroup        singleflight.Group
-	hashFunc        *xxhash.Digest
 	roundRobinIndex uint64
 	Context         context.Context
 }
@@ -49,32 +44,43 @@ func NewProxy(ctx context.Context, servers []Server, redisClient *redisclient.Re
 
 func (p *Proxy) ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		p.forwardRequest(w, r)
+		respBody, headers, err := p.forwardRequest(r)
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			http.Error(w, "Error occurred", http.StatusInternalServerError)
+			return
+		}
+		// Copy over the headers
+		for k, v := range headers {
+			w.Header()[k] = v
+		}
+		w.Write(respBody)
 		return
 	}
+
 	cacheKey := r.URL.String()
-	cacheTimeNow := time.Now()
 	cachedResponse, found := p.RedisClient.Get(p.Context, cacheKey)
 	if found {
-		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(cachedResponse))
 		return
 	}
-	fmt.Println("Time taken to miss reponse from cache: ", time.Since(cacheTimeNow))
-	respBody, headers, err := p.forwardRequest(w, r)
+	respBody, headers, err := p.forwardRequest(r)
 	if err != nil {
+		fmt.Printf("Error: %v\n", err)
 		http.Error(w, "Error occurred", http.StatusInternalServerError)
 		return
 	}
 
 	cacheDuration := p.getCacheDuration(headers.Get("Cache-Control"))
-
 	p.RedisClient.Set(p.Context, cacheKey, string(respBody), cacheDuration)
-
+	// Copy headers before writing body
+	for k, v := range headers {
+		w.Header()[k] = v
+	}
 	w.Write(respBody)
 }
 
-func (p *Proxy) forwardRequest(w http.ResponseWriter, r *http.Request) ([]byte, http.Header, error) {
+func (p *Proxy) forwardRequest(r *http.Request) ([]byte, http.Header, error) {
 	getNextServerNow := time.Now()
 	nextServer := p.getNextServer()
 	fmt.Println("Time taken to get next server: ", time.Since(getNextServerNow))
@@ -84,7 +90,6 @@ func (p *Proxy) forwardRequest(w http.ResponseWriter, r *http.Request) ([]byte, 
 
 	serverUrl, err := url.Parse(nextServerURL)
 	if err != nil {
-		http.Error(w, "Error occurred", http.StatusInternalServerError)
 		return nil, nil, err
 	}
 
@@ -98,7 +103,6 @@ func (p *Proxy) forwardRequest(w http.ResponseWriter, r *http.Request) ([]byte, 
 	response, err := p.HttpClient.Do(r)
 	fmt.Println("Time taken for the request to backend server: ", time.Since(requestTimeNow))
 	if err != nil {
-		http.Error(w, "Error occurred", http.StatusInternalServerError)
 		return nil, nil, err
 	}
 
@@ -111,7 +115,6 @@ func (p *Proxy) forwardRequest(w http.ResponseWriter, r *http.Request) ([]byte, 
 
 	respBody, err := io.ReadAll(response.Body)
 	if err != nil {
-		http.Error(w, "Error occurred", http.StatusInternalServerError)
 		return nil, nil, err
 	}
 	headers := response.Header.Clone()

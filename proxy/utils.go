@@ -3,11 +3,23 @@ package proxy
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 )
+
+func NewHttpClient() *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			MaxIdleConns:        1000,
+			MaxIdleConnsPerHost: 100,
+			IdleConnTimeout:     90 * time.Second,
+			DisableCompression:  true, // If clients accept compressed responses
+		},
+		Timeout: 30 * time.Second,
+	}
+}
 
 func (p *Proxy) getCacheDuration(cacheControl string) time.Duration {
 	defaultTTL := 10 * time.Second
@@ -32,20 +44,35 @@ func (p *Proxy) getCacheDuration(cacheControl string) time.Duration {
 }
 
 func (p *Proxy) getNextServer() *Server {
-	totalWeight := 0
-	for _, server := range p.servers {
-		totalWeight += server.Weight
-	}
+	p.serverLock.RLock()
+	defer p.serverLock.RUnlock()
 
-	index := int(atomic.AddUint64(&p.roundRobinIndex, 1)) % totalWeight
+	var bestServer *Server
+	var bestScore float64 = -1
+
+	now := time.Now()
+
 	for i := range p.servers {
-		if index < p.servers[i].Weight {
-			return &p.servers[i]
+		server := &p.servers[i]
+
+		// Skip servers that failed recently
+		if now.Sub(server.LastCheck) < 10*time.Second && server.AvgResponseMs > 5000 {
+			continue
 		}
-		index -= p.servers[i].Weight
+
+		// Score based on weight and response time
+		score := float64(server.Weight) / (float64(server.AvgResponseMs) + 1)
+		if score > bestScore {
+			bestScore = score
+			bestServer = server
+		}
 	}
 
-	return &p.servers[0] // Fallback, should never reach here
+	if bestServer == nil {
+		return &p.servers[0] // Fallback
+	}
+
+	return bestServer
 }
 
 func (p *Proxy) updateResponseTime(server *Server, responseTime int64) {
@@ -85,8 +112,8 @@ func (p *Proxy) StartWeightAdjustment(ctx context.Context, interval time.Duratio
 			p.adjustWeightsByResponseTime()
 			fmt.Println("--------------------")
 			fmt.Println("Adjusted server weights:")
-			for _, server := range p.servers {
-				fmt.Printf("server: %s, avg_response_time: %d, weight: %d\n", server.URL, server.AvgResponseMs, server.Weight)
+			for i := range p.servers {
+				fmt.Printf("server: %s, avg_response_time: %d, weight: %d\n", p.servers[i].URL, p.servers[i].AvgResponseMs, p.servers[i].Weight)
 			}
 		}
 	}
