@@ -41,8 +41,8 @@ func initConfig() Config {
 		LoadBalancingMode: getEnv("LOAD_BALANCING_MODE", "ROUND_ROBIN"),
 		Servers:           servers,
 		RedisHost:         getEnv("REDIS_HOST", "localhost:6379"),
-		SSLKeyPath:        getEnv("SSL_KEY_PATH", "localhost-key.pem"),
-		SSLCertPath:       getEnv("SSL_CERT_PATH", "localhost.pem"),
+		SSLKeyPath:        getEnv("SSL_KEY_PATH", "USE_HTTP"),
+		SSLCertPath:       getEnv("SSL_CERT_PATH", "USE_HTTP"),
 	}
 }
 
