@@ -55,7 +55,7 @@ func main() {
 
 	// Cacheable endpoints
 	http.HandleFunc("/cached/", server.cacheableHandler) // Returns cached content for 5 minutes
-	http.HandleFunc("/dynamic/", server.dynamicHandler)  // Returns dynamic content with varying processing times
+	http.HandleFunc("/dynamic", server.dynamicHandler)   // Returns dynamic content with varying processing times
 	http.HandleFunc("/metrics", server.metricsHandler)   // Server metrics
 
 	fmt.Printf("Starting test backend server on port %s with base delay %d ms\n", port, intDelay)
