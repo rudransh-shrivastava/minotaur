@@ -4,8 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/olekukonko/tablewriter"
 )
 
 type BenchmarkResult struct {
@@ -60,9 +63,19 @@ func runWrkCommand(command []string) (BenchmarkResult, error) {
 
 func newCommands(port int) [][]string {
 	return [][]string{
-		// {"wrk", "-t6", "-c400", "-d15s", "-H", "Connection: keep-alive", fmt.Sprintf("http://localhost:%d/pattern-delay", port)},k
+		// Basic endpoint
 		{"wrk", "-t6", "-c400", "-d15s", "-H", "Connection: keep-alive", fmt.Sprintf("http://localhost:%d/foo", port)},
-		// {"wrk", "-t6", "-c400", "-d15s", "-H", "Connection: keep-alive", fmt.Sprintf("http://localhost:%d/random-delay", port)},
+
+		// Increased load scenarios
+		// {"wrk", "-t8", "-c400", "-d30s", "-H", "Connection: keep-alive", fmt.Sprintf("http://localhost:%d/random-delay", port)},
+		// {"wrk", "-t8", "-c400", "-d30s", "-H", "Connection: keep-alive", fmt.Sprintf("http://localhost:%d/pattern-delay", port)},
+
+		// Cacheable endpoints
+		// {"wrk", "-t8", "-c400", "-d30s", "-H", "Connection: keep-alive", fmt.Sprintf("http://localhost:%d/cached/item-10", port)},
+		// {"wrk", "-t8", "-c400", "-d30s", "-H", "Connection: keep-alive", fmt.Sprintf("http://localhost:%d/cached/item-99", port)},
+
+		// Dynamic content
+		// {"wrk", "-t8", "-c400", "-d30s", "-H", "Connection: keep-alive", fmt.Sprintf("http://localhost:%d/dynamic", port)},
 	}
 }
 
@@ -97,7 +110,45 @@ func main() {
 		minotaurResults = append(minotaurResults, result)
 	}
 
-	// TODO: display using a table
-	fmt.Printf("Nginx: %+v\n", nginxResults)
-	fmt.Printf("Minotaur: %+v\n", minotaurResults)
+	fmt.Println("Nginx Results:")
+	nginxTable := tablewriter.NewWriter(os.Stdout)
+
+	nginxTable.SetHeader([]string{"URL", "Latency", "Req/Sec", "Transfer/Sec", "Total Requests", "Errors"})
+
+	for _, result := range nginxResults {
+		nginxTable.Append([]string{
+			result.URL,
+			result.Latency,
+			result.ReqPerSec,
+			result.TransferSec,
+			result.TotalRequests,
+			result.Errors,
+		})
+	}
+
+	nginxTable.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
+	nginxTable.SetCenterSeparator("+")
+	nginxTable.SetAlignment(tablewriter.ALIGN_LEFT)
+	nginxTable.Render()
+
+	fmt.Println("Minotaur Results:")
+	minotaurTable := tablewriter.NewWriter(os.Stdout)
+
+	minotaurTable.SetHeader([]string{"URL", "Latency", "Req/Sec", "Transfer/Sec", "Total Requests", "Errors"})
+
+	for _, result := range minotaurResults {
+		minotaurTable.Append([]string{
+			result.URL,
+			result.Latency,
+			result.ReqPerSec,
+			result.TransferSec,
+			result.TotalRequests,
+			result.Errors,
+		})
+	}
+
+	minotaurTable.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
+	minotaurTable.SetCenterSeparator("+")
+	minotaurTable.SetAlignment(tablewriter.ALIGN_LEFT)
+	minotaurTable.Render()
 }
