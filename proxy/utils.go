@@ -76,7 +76,7 @@ func (p *Proxy) getNextServer() *Server {
 }
 
 func (p *Proxy) updateResponseTime(server *Server, responseTime int64) {
-	const alpha = 0.8 // Smoothing factor for Exponential Moving Average (EMA)
+	const alpha = 0.5 // Smoothing factor for Exponential Moving Average (EMA)
 	if server.TotalResponses == 0 {
 		// Init
 		server.AvgResponseMs = responseTime
@@ -87,7 +87,7 @@ func (p *Proxy) updateResponseTime(server *Server, responseTime int64) {
 }
 
 func (p *Proxy) adjustWeightsByResponseTime() {
-	const smoothingFactor = 1 // Add 1ms to all response times for fairness
+	const smoothingFactor = 50 // Add to all response times for fairness
 	for i := range p.servers {
 		server := &p.servers[i]
 		if server.AvgResponseMs == 0 {

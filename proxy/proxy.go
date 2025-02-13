@@ -87,9 +87,7 @@ func (p *Proxy) ProxyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Proxy) forwardRequest(r *http.Request) ([]byte, http.Header, error) {
-	getNextServerNow := time.Now()
 	nextServer := p.getNextServer()
-	fmt.Println("Time taken to get next server: ", time.Since(getNextServerNow))
 	nextServer.Count++
 	nextServerURL := nextServer.URL
 	fmt.Println("Routing the request to server: ", nextServerURL)
@@ -105,17 +103,13 @@ func (p *Proxy) forwardRequest(r *http.Request) ([]byte, http.Header, error) {
 	r.RequestURI = ""
 
 	start := time.Now()
-	requestTimeNow := time.Now()
 	response, err := p.HttpClient.Do(r)
-	fmt.Println("Time taken for the request to backend server: ", time.Since(requestTimeNow))
 	if err != nil {
 		return nil, nil, err
 	}
 
 	responseTime := time.Since(start).Milliseconds()
-	updateReponseTimeNow := time.Now()
 	p.updateResponseTime(nextServer, responseTime)
-	fmt.Println("Time taken to update reponse time: ", time.Since(updateReponseTimeNow))
 
 	defer response.Body.Close()
 
@@ -124,6 +118,5 @@ func (p *Proxy) forwardRequest(r *http.Request) ([]byte, http.Header, error) {
 		return nil, nil, err
 	}
 	headers := response.Header.Clone()
-	fmt.Println("Time taken for the whole opertaion: ", time.Since(getNextServerNow))
 	return respBody, headers, nil
 }

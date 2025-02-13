@@ -71,8 +71,8 @@ func (s *Server) fooHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) randomDelayHandler(w http.ResponseWriter, r *http.Request) {
 	s.incrementRequests()
-	// Random delay between 0-200ms
-	randomDelay := rand.Intn(200)
+	// Random delay between 100 + 0-200ms
+	randomDelay := 100 + rand.Intn(200)
 	time.Sleep(time.Duration(randomDelay) * time.Millisecond)
 	w.Write([]byte(fmt.Sprintf("delayed-%dms", randomDelay)))
 }
@@ -94,8 +94,12 @@ func (s *Server) cacheableHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) dynamicHandler(w http.ResponseWriter, r *http.Request) {
 	s.incrementRequests()
+	// Simulate Delay
+	if s.Delay > 0 {
+		time.Sleep(time.Duration(s.Delay) * time.Millisecond)
+	}
 	// Simulate varying processing times
-	processingTime := 50 + rand.Intn(200)
+	processingTime := 50 + rand.Intn(100)
 	time.Sleep(time.Duration(processingTime) * time.Millisecond)
 
 	w.Header().Set("Cache-Control", "no-cache")
