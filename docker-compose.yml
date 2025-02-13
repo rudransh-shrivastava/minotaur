@@ -14,6 +14,8 @@ services:
       - test-server-1
       - test-server-2
       - test-server-3
+      - test-server-4
+      - test-server-5
 
   test-server-1:
     build:
@@ -24,6 +26,7 @@ services:
       - "8081:8081"
     environment:
       - PORT=8081
+      - DELAY=50
 
   test-server-2:
     build:
@@ -34,7 +37,7 @@ services:
       - "8082:8082"
     environment:
       - PORT=8082
-      - DELAY=200
+      - DELAY=100
 
   test-server-3:
     build:
@@ -45,3 +48,26 @@ services:
       - "8083:8083"
     environment:
       - PORT=8083
+      - DELAY=150
+
+  test-server-4:
+    build:
+      context: ./test_server
+      dockerfile: Dockerfile
+    container_name: test-server-4
+    ports:
+      - "8084:8084"
+    environment:
+      - PORT=8084
+      - DELAY=200
+
+  test-server-5:
+    build:
+      context: ./test_server
+      dockerfile: Dockerfile
+    container_name: test-server-5
+    ports:
+      - "8085:8085"
+    environment:
+      - PORT=8085
+      - DELAY=300
