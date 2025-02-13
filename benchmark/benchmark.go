@@ -79,35 +79,51 @@ func newCommands(port int) [][]string {
 	}
 }
 
-func main() {
-	fmt.Println("Running wrk benchmarks on nginx...")
-	nginxCommands := newCommands(8080)
+func runBenchmark(port int) []BenchmarkResult {
+	commands := newCommands(port)
+	results := []BenchmarkResult{}
 
-	nginxResults := []BenchmarkResult{}
-
-	for _, cmd := range nginxCommands {
+	for _, cmd := range commands {
 		fmt.Printf("Running: %s\n", cmd)
 		result, err := runWrkCommand(cmd)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			continue
 		}
-		nginxResults = append(nginxResults, result)
+		results = append(results, result)
+	}
+	return results
+}
+
+func main() {
+	var mode string
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: benchmark <mode>")
+		fmt.Println("<mode> can be 'nginx' 'minotaur' or 'both'.")
+	} else {
+		mode = os.Args[1]
+	}
+	if mode != "nginx" && mode != "minotaur" && mode != "both" {
+		fmt.Println("Invalid mode. Please use 'nginx', 'minotaur' or 'both'.")
+		os.Exit(1)
 	}
 
-	fmt.Println("Running wrk benchmakrs on minotaur...")
+	nginxResults := make([]BenchmarkResult, 0)
+	minotaurResults := make([]BenchmarkResult, 0)
 
-	minotaurCommands := newCommands(59000)
-	minotaurResults := []BenchmarkResult{}
-
-	for _, cmd := range minotaurCommands {
-		fmt.Printf("Running: %s\n", cmd)
-		result, err := runWrkCommand(cmd)
-		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			continue
-		}
-		minotaurResults = append(minotaurResults, result)
+	if mode == "both" {
+		fmt.Println("Running wrk benchmarks on nginx...")
+		nginxResults = runBenchmark(8080)
+		fmt.Println("Running wrk benchmakrs on minotaur...")
+		minotaurResults = runBenchmark(59000)
+	}
+	if mode == "nginx" {
+		fmt.Println("Running wrk benchmarks on nginx...")
+		nginxResults = runBenchmark(8080)
+	}
+	if mode == "minotaur" {
+		fmt.Println("Running wrk benchmakrs on minotaur...")
+		minotaurResults = runBenchmark(59000)
 	}
 
 	fmt.Println("Results: ")
@@ -115,26 +131,58 @@ func main() {
 
 	table.SetHeader([]string{"Proxy -> Endpoint", "Latency", "Req/Sec", "Transfer/Sec", "Total Requests", "Errors"})
 
-	for i := range len(nginxResults) {
-		// URL: http://localhost:8080/foo
-		endpoint := strings.Split(nginxResults[i].URL, "8080")[1]
-		table.Append([]string{
-			fmt.Sprintf("Nginx -> %s", endpoint),
-			nginxResults[i].Latency,
-			nginxResults[i].ReqPerSec,
-			nginxResults[i].TransferSec,
-			nginxResults[i].TotalRequests,
-			nginxResults[i].Errors,
-		})
-		table.Append([]string{
-			fmt.Sprintf("Minotaur -> %s", endpoint),
-			minotaurResults[i].Latency,
-			minotaurResults[i].ReqPerSec,
-			minotaurResults[i].TransferSec,
-			minotaurResults[i].TotalRequests,
-			minotaurResults[i].Errors,
-		})
+	if mode == "both" {
+		for i := range len(nginxResults) {
+			// URL: http://localhost:8080/foo
+			endpoint := strings.Split(nginxResults[i].URL, "8080")[1]
+			table.Append([]string{
+				fmt.Sprintf("Nginx -> %s", endpoint),
+				nginxResults[i].Latency,
+				nginxResults[i].ReqPerSec,
+				nginxResults[i].TransferSec,
+				nginxResults[i].TotalRequests,
+				nginxResults[i].Errors,
+			})
+			table.Append([]string{
+				fmt.Sprintf("Minotaur -> %s", endpoint),
+				minotaurResults[i].Latency,
+				minotaurResults[i].ReqPerSec,
+				minotaurResults[i].TransferSec,
+				minotaurResults[i].TotalRequests,
+				minotaurResults[i].Errors,
+			})
+		}
 	}
+	if mode == "nginx" {
+		for i := range len(nginxResults) {
+			// URL: http://localhost:8080/foo
+			endpoint := strings.Split(nginxResults[i].URL, "8080")[1]
+			table.Append([]string{
+				fmt.Sprintf("Nginx -> %s", endpoint),
+				nginxResults[i].Latency,
+				nginxResults[i].ReqPerSec,
+				nginxResults[i].TransferSec,
+				nginxResults[i].TotalRequests,
+				nginxResults[i].Errors,
+			})
+		}
+	}
+	if mode == "minotaur" {
+		for i := range len(minotaurResults) {
+			// URL: http://localhost:8080/foo
+			endpoint := strings.Split(minotaurResults[i].URL, "59000")[1]
+			table.Append([]string{
+				fmt.Sprintf("Minotaur -> %s", endpoint),
+				minotaurResults[i].Latency,
+				minotaurResults[i].ReqPerSec,
+				minotaurResults[i].TransferSec,
+				minotaurResults[i].TotalRequests,
+				minotaurResults[i].Errors,
+			})
+		}
+	}
+
+	// Other table configurations
 	table.SetRowLine(true)
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("+")

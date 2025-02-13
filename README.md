@@ -2,54 +2,81 @@
 
 Minotaur is a high performance reverse proxy that supports load balancing, SSL/TLS encryption, and caching.
 
-## Table of Contents  
+## Table of Contents
 
 - [Introduction](#introduction)
 - [Benchmarks](#benchmarks-minotaur-vs-nginx)
-- [Features](#features)  
-- [How Minotaur Works](#how-minotaur-works)  
+- [Other Features](#other-features)
+- [How Minotaur Works](#how-minotaur-works)
 - [Prerequisites](#prerequisites)
 - [Getting Started](#getting-started)
-- [Usage](#usage)  
-- [License](#license)  
+- [Usage](#usage)
+- [License](#license)
 
-# Introduction
+## Introduction
 
-# Benchmarks (Minotaur vs Nginx)
+Minotaur is a high-performance reverse proxy server that acts as an intermediary between clients and backend servers. It is designed to handle a large number of concurrent connections and distribute incoming requests across multiple backend servers.
 
-# Features 
+One of the main advantages of Minotaur is its ability to distribute requests using an algorithm that takes into account the performance of each server and adjusts the distribution of requests accordingly. This ensures that faster servers handle more requests, leading to better performance and reduced latency.
 
-**Load balancing:** distributes incoming requests using a weighted round robin algorithm (default/configurable)
+More on this algorithm in [How Minotaur Works](#how-minotaur-works)
+
+## Benchmarks (Minotaur vs NGINX)
+NGINX is a popular reverse proxy server known for its high performance and low resource usage.
+
+In this benchmark, we compare the performance of Minotaur with NGINX to see how they handle a large number of concurrent connections in various senerios.
+
+*NOTE*: All benchmarks were conducted on a machine with the following specifications:
+- **CPU**: 12th Gen Intel i3-1215U (8) @ 4.400GHz
+- **RAM**: 16GB
+- **OS**: EndeavourOS (Arch Linux)
+
+*NOTE*: All benchmarks ran for 30s and used `wrk` see `benchmark/benchmark.go` for more details.
+
+Nginx has a few load balancing algorithms that can be tuned to improve performance. For this benchmark, we used all its different algorithms against Minotaurs singular algorithm.
+Read more about their algorithms here: [Nginx Docs](https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/#choosing-a-load-balancing-method)
+
+NGINX Load Balancing Algorithms used for this benchmark:
+- Round Robin
+- Least Connections
+- IP Hash
+- Random
+
+*Note*: `Least Time` algorithm was not used as its only available for NGINX Plus.
+
+#### Minotaur vs Nginx (Default Algorithm)
+
+## Other Features
 
 **SSL/TLS encryption:** acts as a SSL terminator, configurable to use your own SSL certificates
 
-**Caching:** uses Redis for caching HTTP responses to reduce server load.
+## How Minotaur Works
 
-# How Minotaur Works
+Now let us understand how Minotaur actually works and why it performs better than NGINX in the benchmarks above.
 
-# Prerequisites 
+## Prerequisites
 Before we begin with an example usage, please ensure you have the following installed:
 1. [Go](https://go.dev/doc/install)
 2. [Docker](https://docs.docker.com/engine/install/) & [Docker Compose](https://docs.docker.com/compose/install/)
 
-# Getting Started
+## Getting Started
 
-### Clone the Repository:
+#### Clone the Repository:
 ```bash
 git clone https://github.com/rudransh-shrivastava/minotaur
 ```
 
-### Change Directory
+#### Change Directory
 ```bash
 cd minotaur
 ```
 
-### Install Dependencies
+#### Install Dependencies
 ```bash
 go mod tidy
 ```
 
-### Get a self-signed SSL Certificate
+#### Get a self-signed SSL Certificate
 For local development and testing, you can use [mkcert](https://github.com/FiloSottile/mkcert) to generate a self-signed SSL certificate. This is a simple tool that creates locally trusted certificates for development purposes.
 ```bash
 mkcert -install
@@ -57,7 +84,7 @@ mkcert localhost
 ```
 This generates a `localhost.pem` (the SSL certificate) and `localhost-key.pem` (the private key) in the project root
 
-### Setup Environment Variables
+#### Setup Environment Variables
 
 create a `.env` file.
 ```bash
@@ -74,10 +101,10 @@ SSL_KEY_PATH="localhost-key.pem"
 SSL_CERT_PATH="localhost.pem"
 ```
 
-**Descriptions:** 
+**Descriptions:**
 
  - *PORT*: Port on which the reverse proxy server will listen for incoming HTTPS requests.
- -  *LOAD_BALANCING_MODE*: The load balancing algorithm used by the proxy to distribute incoming requests across backend servers. Available modes: 
+ -  *LOAD_BALANCING_MODE*: The load balancing algorithm used by the proxy to distribute incoming requests across backend servers. Available modes:
 	 -   `WEIGHTED_ROUND_ROBIN`: Distributes requests based on the server weights. Servers with higher weights will receive more requests.
 	-   `ROUND_ROBIN`: Distributes requests evenly across all servers.
  - *SERVERS*: the list of backend servers to which the proxy will forward requests. Each server should be specified by its URL separated by a `,`
@@ -87,9 +114,9 @@ SSL_CERT_PATH="localhost.pem"
 
 You can copy these default environment variables to your `.env` file. If you don't create a `.env` file, these defaults will be used by the server.
 
-# Usage
+## Usage
 
-### Run Testing Servers and Redis
+#### Run Testing Servers and Redis
 we will use docker-compose to run the testing servers and a redis instance.
 
 **build the containers**
@@ -107,7 +134,7 @@ docker-compose up -d
 ```
 This runs the testing servers(3) and a redis instance for caching.
 
-### Run the Reverse Proxy
+#### Run the Reverse Proxy
 Now, its time to run the reverse proxy, the reverse proxy will act as an intermediary between the servers and the clients
 
 **Build Minotaur:**
@@ -124,14 +151,14 @@ go build -o bin/minotaur
 bin/minotaur
 ```
 if you get the error : `Error starting server: listen tcp :443: bind: permission denied`
-use `sudo` to run Minotaur 
+use `sudo` to run Minotaur
 ```bash
 sudo bin/minotaur
 ```
 
 ## How Load Balancing Works
 
-Minotaur uses a **weighted round-robin** algorithm to distribute requests, requests are distributed across backend servers based on the calculated weight of each server. 
+Minotaur uses a **weighted round-robin** algorithm to distribute requests, requests are distributed across backend servers based on the calculated weight of each server.
 
 The weight of each server is adjusted periodically and dynamically based on its **average response time**, this ensures that faster servers handle more requests.
 
@@ -143,7 +170,7 @@ The formula:
 ```
 new_avg_response_time = (old_avg_response_time * (1 - alpha)) + (current_response_time * alpha)
 ```
-where `alpha` is the smoothing factor (between 0 and 
+where `alpha` is the smoothing factor (between 0 and
 1)
 
 Then each servers weight is calculated using this formula:
@@ -156,4 +183,4 @@ A server with lower average response time will have a higher weight and will han
 
 Minotaur uses **Redis** for caching HTTP responses to reduce the load on backend servers. The proxy will check if a response for a given request is already cached. If it is, it serves the cached response. If not, it forwards the request to a backend server, caches the response, and then serves it.
 
-# License
+## License
