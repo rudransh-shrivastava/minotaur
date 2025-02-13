@@ -1,6 +1,23 @@
 # Minotaur
 
-Minotaur is a reverse proxy that supports load balancing, SSL/TLS encryption, caching with Redis, and dynamic server weight adjustments based on server response times.
+Minotaur is a high performance reverse proxy that supports load balancing, SSL/TLS encryption, and caching.
+
+## Table of Contents  
+
+- [Introduction](#introduction)
+- [Benchmarks](#benchmarks-minotaur-vs-nginx)
+- [Features](#features)  
+- [How Minotaur Works](#how-minotaur-works)  
+- [Prerequisites](#prerequisites)
+- [Getting Started](#getting-started)
+- [Usage](#usage)  
+- [License](#license)  
+
+# Introduction
+
+# Benchmarks (Minotaur vs Nginx)
+
+# Features 
 
 **Load balancing:** distributes incoming requests using a weighted round robin algorithm (default/configurable)
 
@@ -8,12 +25,14 @@ Minotaur is a reverse proxy that supports load balancing, SSL/TLS encryption, ca
 
 **Caching:** uses Redis for caching HTTP responses to reduce server load.
 
+# How Minotaur Works
+
 # Prerequisites 
 Before we begin with an example usage, please ensure you have the following installed:
 1. [Go](https://go.dev/doc/install)
 2. [Docker](https://docs.docker.com/engine/install/) & [Docker Compose](https://docs.docker.com/compose/install/)
 
-# Example Usage
+# Getting Started
 
 ### Clone the Repository:
 ```bash
@@ -67,6 +86,8 @@ SSL_CERT_PATH="localhost.pem"
  - *SSL_CERT_PATH*: Path to the SSL certificate file.
 
 You can copy these default environment variables to your `.env` file. If you don't create a `.env` file, these defaults will be used by the server.
+
+# Usage
 
 ### Run Testing Servers and Redis
 we will use docker-compose to run the testing servers and a redis instance.
@@ -134,3 +155,5 @@ A server with lower average response time will have a higher weight and will han
 ## Caching
 
 Minotaur uses **Redis** for caching HTTP responses to reduce the load on backend servers. The proxy will check if a response for a given request is already cached. If it is, it serves the cached response. If not, it forwards the request to a backend server, caches the response, and then serves it.
+
+# License
