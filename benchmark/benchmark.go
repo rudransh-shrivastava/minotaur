@@ -63,19 +63,19 @@ func runWrkCommand(command []string) (BenchmarkResult, error) {
 
 func newCommands(port int) [][]string {
 	return [][]string{
-		// Basic endpoint
-		{"wrk", "-t6", "-c400", "-d15s", "-H", "Connection: keep-alive", fmt.Sprintf("http://localhost:%d/foo", port)},
+		// Basic endpoint that returns "foo"
+		// Cacheable
+		{"wrk", "-t6", "-c400", "-d30s", "-H", "Connection: keep-alive", fmt.Sprintf("http://localhost:%d/foo", port)},
 
-		// Increased load scenarios
-		// {"wrk", "-t8", "-c400", "-d30s", "-H", "Connection: keep-alive", fmt.Sprintf("http://localhost:%d/random-delay", port)},
-		// {"wrk", "-t8", "-c400", "-d30s", "-H", "Connection: keep-alive", fmt.Sprintf("http://localhost:%d/pattern-delay", port)},
+		// Do not cache this endpoints
+		// /random-delay responds after a random delay (0-200ms)
+		{"wrk", "-t6", "-c400", "-d30s", "-H", "Connection: keep-alive", "-H", "Cache-Control: no-cache", fmt.Sprintf("http://localhost:%d/random-delay", port)},
 
-		// Cacheable endpoints
-		// {"wrk", "-t8", "-c400", "-d30s", "-H", "Connection: keep-alive", fmt.Sprintf("http://localhost:%d/cached/item-10", port)},
-		// {"wrk", "-t8", "-c400", "-d30s", "-H", "Connection: keep-alive", fmt.Sprintf("http://localhost:%d/cached/item-99", port)},
+		// Cacheable endpoint
+		{"wrk", "-t6", "-c400", "-d30s", "-H", "Connection: keep-alive", fmt.Sprintf("http://localhost:%d/cached/item-99", port)},
 
 		// Dynamic content
-		// {"wrk", "-t8", "-c400", "-d30s", "-H", "Connection: keep-alive", fmt.Sprintf("http://localhost:%d/dynamic", port)},
+		{"wrk", "-t6", "-c400", "-d30s", "-H", "Connection: keep-alive", "-H", "Cache-Control: no-cache", fmt.Sprintf("http://localhost:%d/dynamic", port)},
 	}
 }
 
@@ -110,45 +110,34 @@ func main() {
 		minotaurResults = append(minotaurResults, result)
 	}
 
-	fmt.Println("Nginx Results:")
-	nginxTable := tablewriter.NewWriter(os.Stdout)
+	fmt.Println("Results: ")
+	table := tablewriter.NewWriter(os.Stdout)
 
-	nginxTable.SetHeader([]string{"URL", "Latency", "Req/Sec", "Transfer/Sec", "Total Requests", "Errors"})
+	table.SetHeader([]string{"Proxy -> Endpoint", "Latency", "Req/Sec", "Transfer/Sec", "Total Requests", "Errors"})
 
-	for _, result := range nginxResults {
-		nginxTable.Append([]string{
-			result.URL,
-			result.Latency,
-			result.ReqPerSec,
-			result.TransferSec,
-			result.TotalRequests,
-			result.Errors,
+	for i := range len(nginxResults) {
+		// URL: http://localhost:8080/foo
+		endpoint := strings.Split(nginxResults[i].URL, "8080")[1]
+		table.Append([]string{
+			fmt.Sprintf("Nginx -> %s", endpoint),
+			nginxResults[i].Latency,
+			nginxResults[i].ReqPerSec,
+			nginxResults[i].TransferSec,
+			nginxResults[i].TotalRequests,
+			nginxResults[i].Errors,
+		})
+		table.Append([]string{
+			fmt.Sprintf("Minotaur -> %s", endpoint),
+			minotaurResults[i].Latency,
+			minotaurResults[i].ReqPerSec,
+			minotaurResults[i].TransferSec,
+			minotaurResults[i].TotalRequests,
+			minotaurResults[i].Errors,
 		})
 	}
-
-	nginxTable.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
-	nginxTable.SetCenterSeparator("+")
-	nginxTable.SetAlignment(tablewriter.ALIGN_LEFT)
-	nginxTable.Render()
-
-	fmt.Println("Minotaur Results:")
-	minotaurTable := tablewriter.NewWriter(os.Stdout)
-
-	minotaurTable.SetHeader([]string{"URL", "Latency", "Req/Sec", "Transfer/Sec", "Total Requests", "Errors"})
-
-	for _, result := range minotaurResults {
-		minotaurTable.Append([]string{
-			result.URL,
-			result.Latency,
-			result.ReqPerSec,
-			result.TransferSec,
-			result.TotalRequests,
-			result.Errors,
-		})
-	}
-
-	minotaurTable.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
-	minotaurTable.SetCenterSeparator("+")
-	minotaurTable.SetAlignment(tablewriter.ALIGN_LEFT)
-	minotaurTable.Render()
+	table.SetRowLine(true)
+	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
+	table.SetCenterSeparator("+")
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table.Render()
 }

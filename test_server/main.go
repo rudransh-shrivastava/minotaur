@@ -49,9 +49,8 @@ func main() {
 		server.cacheableData[key] = []byte(fmt.Sprintf("cached-content-%d", i))
 	}
 
-	http.HandleFunc("/foo", server.fooHandler)                    // Returns "foo"
-	http.HandleFunc("/random-delay", server.randomDelayHandler)   // Returns with a random delay between 100-500ms
-	http.HandleFunc("/pattern-delay", server.patternDelayHandler) // Alternate between fast and slow responses
+	http.HandleFunc("/foo", server.fooHandler)                  // Returns "foo"
+	http.HandleFunc("/random-delay", server.randomDelayHandler) // Returns with a random delay between 100-500ms
 
 	// Cacheable endpoints
 	http.HandleFunc("/cached/", server.cacheableHandler) // Returns cached content for 5 minutes
@@ -72,25 +71,10 @@ func (s *Server) fooHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) randomDelayHandler(w http.ResponseWriter, r *http.Request) {
 	s.incrementRequests()
-	// Random delay between 100-500ms
-	randomDelay := 100 + rand.Intn(400)
+	// Random delay between 0-200ms
+	randomDelay := rand.Intn(200)
 	time.Sleep(time.Duration(randomDelay) * time.Millisecond)
 	w.Write([]byte(fmt.Sprintf("delayed-%dms", randomDelay)))
-}
-
-func (s *Server) patternDelayHandler(w http.ResponseWriter, r *http.Request) {
-	s.incrementRequests()
-	s.mutex.Lock()
-	s.PatternDelay = !s.PatternDelay
-	shouldDelay := s.PatternDelay
-	s.mutex.Unlock()
-
-	if shouldDelay {
-		time.Sleep(300 * time.Millisecond)
-		w.Write([]byte("slow-response"))
-	} else {
-		w.Write([]byte("fast-response"))
-	}
 }
 
 func (s *Server) cacheableHandler(w http.ResponseWriter, r *http.Request) {

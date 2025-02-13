@@ -43,7 +43,11 @@ func NewProxy(ctx context.Context, servers []Server, redisClient *redisclient.Re
 }
 
 func (p *Proxy) ProxyHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
+
+	// Check if the method is not GET, that means we cannot
+	// cache it. Also, if the request has Cache-Control: no-cache
+	// we should not cache it.
+	if r.Method != http.MethodGet || r.Header.Get("Cache-Control") == "no-cache" {
 		respBody, headers, err := p.forwardRequest(r)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
@@ -58,12 +62,14 @@ func (p *Proxy) ProxyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Find cached response
 	cacheKey := r.URL.String()
 	cachedResponse, found := p.RedisClient.Get(p.Context, cacheKey)
 	if found {
 		w.Write([]byte(cachedResponse))
 		return
 	}
+	// Cached response not found, forward request
 	respBody, headers, err := p.forwardRequest(r)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
