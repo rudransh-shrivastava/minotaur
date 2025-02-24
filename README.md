@@ -31,7 +31,7 @@ In this benchmark, we compare the performance of Minotaur with NGINX to see how 
 - **RAM**: 16GB
 - **OS**: EndeavourOS (Arch Linux)
 
-Nginx has a few load balancing algorithms that can be tuned to improve performance. For this benchmark, we used all its different algorithms against Minotaurs singular algorithm.
+Nginx has a few load balancing algorithms that can be tuned to improve performance. For this benchmark, I used all its different algorithms against Minotaurs singular algorithm.
 Read more about their algorithms here: [Nginx Docs](https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/#choosing-a-load-balancing-method)
 
 NGINX Load Balancing Algorithms used for this benchmark:
@@ -43,7 +43,7 @@ NGINX Load Balancing Algorithms used for this benchmark:
 *Note*: `Least Time` algorithm was not used as its only available for NGINX Plus.
 
 ### Handlers and Servers
-We used 5 servers to handle requests, each server was a simple HTTP server that responded with a simple JSON response. The servers were running on different ports on the same machine.
+I used 5 servers to handle requests, each server was a simple HTTP server that responded with a simple JSON response. The servers were running on different ports on the same machine.
 There were artificial delays set on each server to simulate different response times.
 
 - Server 1: 50ms delay
@@ -118,7 +118,35 @@ TBA
 ## How Minotaur Works
 
 Now let us understand how Minotaur actually works and why it performs better than NGINX in some of the benchmarks above.
+Minotaur decides the route of a request based on how well different backend servers are doing, this means that the server doing good will receive more requests than one doing poorly.
+The way we decide which server is `better` than another is by calculating their `mean response times` using an Exponential Moving Average.
+An exponential moving average is an average which gives more weight to recent data, we used this formula to calculate the next average of a server.
+```go
+const alpha = 0.5 // Smoothing factor for Exponential Moving Average (EMA)
+if server.TotalResponses == 0 {
+    // Init
+    server.AvgResponseMs = responseTime
+} else {
+    server.AvgResponseMs = int64(float64(server.AvgResponseMs)*(1-alpha) + float64(responseTime)*alpha)
+}
+server.TotalResponses++
+```
+I found 0.5 to work best for the value of alpha.
 
+Then the proxy updates the weights of every server every 2 seconds.
+```go
+const smoothingFactor = 50 // Add to all response times for fairness
+for i := range p.servers {
+    server := &p.servers[i]
+    if server.AvgResponseMs == 0 {
+        server.AvgResponseMs = 1 // Divide by zero prevention
+    }
+    server.Weight = int(1000 / (server.AvgResponseMs + smoothingFactor))
+    if server.Weight < 1 {
+    server.Weight = 1
+    }
+}
+```
 ## Prerequisites
 Before we begin with an example usage, please ensure you have the following installed:
 1. [Go](https://go.dev/doc/install)
@@ -221,31 +249,6 @@ use `sudo` to run Minotaur
 sudo bin/minotaur
 ```
 
-## How Load Balancing Works
-
-Minotaur uses a **weighted round-robin** algorithm to distribute requests, requests are distributed across backend servers based on the calculated weight of each server.
-
-The weight of each server is adjusted periodically and dynamically based on its **average response time**, this ensures that faster servers handle more requests.
-
-### Response Time Calculation and Weight Adjustment
-The weight of each server is recalculated periodically based on its **average response time**. This is done using the **Exponential Moving Average (EMA)** formula.
-
-The **Exponential Moving Average** gives higher weight to recent response times so that the proxy can quickly adapt to the changes in server performance.
-The formula:
-```
-new_avg_response_time = (old_avg_response_time * (1 - alpha)) + (current_response_time * alpha)
-```
-where `alpha` is the smoothing factor (between 0 and
-1)
-
-Then each servers weight is calculated using this formula:
-```
-server_weight = 1000 / (avg_response_time + smoothing_factor)
-```
-A server with lower average response time will have a higher weight and will handle more requests.
-
-## Caching
-
-Minotaur uses **Redis** for caching HTTP responses to reduce the load on backend servers. The proxy will check if a response for a given request is already cached. If it is, it serves the cached response. If not, it forwards the request to a backend server, caches the response, and then serves it.
-
 ## License
+
+This project is Licensed under the MIT License.
