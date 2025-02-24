@@ -1,0 +1,8 @@
+hey -n 5000 -H Connection: keep-alive http://localhost:59000/foo
+hey -n 5000 -H Connection: keep-alive http://localhost:8080/foo
+hey -n 5000 -H Connection: keep-alive -H Cache-Control: no-cache http://localhost:59000/dynamic
+hey -n 5000 -H Connection: keep-alive -H Cache-Control: no-cache http://localhost:8080/dynamic
+hey -n 5000 -H Connection: keep-alive http://localhost:59000/cached/item-99
+hey -n 5000 -H Connection: keep-alive http://localhost:8080/cached/item-99
+hey -n 5000 -H Connection: keep-alive -H Cache-Control: no-cache http://localhost:59000/random-delay
+hey -n 5000 -H Connection: keep-alive -H Cache-Control: no-cache http://localhost:8080/random-delay

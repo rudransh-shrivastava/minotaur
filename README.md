@@ -24,27 +24,92 @@ More on this algorithm in [How Minotaur Works](#how-minotaur-works)
 ## Benchmarks (Minotaur vs NGINX)
 NGINX is a popular reverse proxy server known for its high performance and low resource usage.
 
-In this benchmark, we compare the performance of Minotaur with NGINX to see how they handle a large number of concurrent connections in various senerios.
+In this benchmark, we compare the performance of Minotaur with NGINX to see how they handle a large number of concurrent requests in various senerios.
 
 *NOTE*: All benchmarks were conducted on a machine with the following specifications:
 - **CPU**: 12th Gen Intel i3-1215U (8) @ 4.400GHz
 - **RAM**: 16GB
 - **OS**: EndeavourOS (Arch Linux)
 
-*NOTE*: All benchmarks ran for 30s and used `wrk` see `benchmark/benchmark.go` for more details.
-
 Nginx has a few load balancing algorithms that can be tuned to improve performance. For this benchmark, we used all its different algorithms against Minotaurs singular algorithm.
 Read more about their algorithms here: [Nginx Docs](https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/#choosing-a-load-balancing-method)
 
 NGINX Load Balancing Algorithms used for this benchmark:
-- Round Robin
-- Least Connections
+- Weighted Round Robin (Default)
+- Weighted Least Connections
 - IP Hash
 - Random
 
 *Note*: `Least Time` algorithm was not used as its only available for NGINX Plus.
 
-#### Minotaur vs Nginx (Default Algorithm)
+### Handlers and Servers
+We used 5 servers to handle requests, each server was a simple HTTP server that responded with a simple JSON response. The servers were running on different ports on the same machine.
+There were artificial delays set on each server to simulate different response times.
+
+- Server 1: 50ms delay
+- Server 2: 100ms delay
+- Server 3: 150ms delay
+- Server 4: 200ms delay
+- Server 5: 300ms delay
+
+There were 4 handlers on each one of these servers.
+- `/foo`: returns "foo", can be cached, obeys the delays set on the server
+- `/dynamic`: returns a random number, cannot be cached, obeys the delays set on the server + 50-150ms random delay
+- `/cached`: returns "cached", can be cached, obeys the delays set on the server
+- `/random-delay`: returns a random number, cannot be cached, does not obey the delays set on the server, returns with a delay between 100ms to 300ms
+
+### Minotaur vs Nginx (Default Algorithm)
+`/foo`
+<insert-image-here>
+
+`/dynamic`
+<insert-image-here>
+
+`/cached/item-99`
+<insert-image-here>
+
+`/random-delay`
+<insert-image-here>
+
+### Other Nginx Algorithms
+#### Weighted Least Connections
+`/foo`
+<insert-image-here>
+
+`/dynamic`
+<insert-image-here>
+
+`/cached/item-99`
+<insert-image-here>
+
+`/random-delay`
+<insert-image-here>
+
+#### IP Hash
+`/foo`
+<insert-image-here>
+
+`/dynamic`
+<insert-image-here>
+
+`/cached/item-99`
+<insert-image-here>
+
+`/random-delay`
+<insert-image-here>
+
+#### Random
+`/foo`
+<insert-image-here>
+
+`/dynamic`
+<insert-image-here>
+
+`/cached/item-99`
+<insert-image-here>
+
+`/random-delay`
+<insert-image-here>
 
 ## Other Features
 
@@ -52,7 +117,7 @@ NGINX Load Balancing Algorithms used for this benchmark:
 
 ## How Minotaur Works
 
-Now let us understand how Minotaur actually works and why it performs better than NGINX in the benchmarks above.
+Now let us understand how Minotaur actually works and why it performs better than NGINX in some of the benchmarks above.
 
 ## Prerequisites
 Before we begin with an example usage, please ensure you have the following installed:
