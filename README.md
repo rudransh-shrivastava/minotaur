@@ -60,56 +60,56 @@ There were 4 handlers on each one of these servers.
 
 ### Minotaur vs Nginx (Default Algorithm)
 `/foo`
-<insert-image-here>
+![foo](https://github.com/user-attachments/assets/1e1e188e-c741-4194-a4b5-90232f6edf95)
 
 `/dynamic`
-<insert-image-here>
+![dynamic](https://github.com/user-attachments/assets/1fb3c85d-5aa3-4208-97b8-d479c4b64e9c)
 
 `/cached/item-99`
-<insert-image-here>
+![cached](https://github.com/user-attachments/assets/187125cc-34aa-4a14-9163-0a8c21a4bc38)
 
 `/random-delay`
-<insert-image-here>
+![random](https://github.com/user-attachments/assets/1150fc1b-1223-401e-b74b-baff027f191a)
 
 ### Other Nginx Algorithms
 #### Weighted Least Connections
 `/foo`
-<insert-image-here>
+TBA
 
 `/dynamic`
-<insert-image-here>
+TBA
 
 `/cached/item-99`
-<insert-image-here>
+TBA
 
 `/random-delay`
-<insert-image-here>
+TBA
 
 #### IP Hash
 `/foo`
-<insert-image-here>
+TBA
 
 `/dynamic`
-<insert-image-here>
+TBA
 
 `/cached/item-99`
-<insert-image-here>
+TBA
 
 `/random-delay`
-<insert-image-here>
+TBA
 
 #### Random
 `/foo`
-<insert-image-here>
+TBA
 
 `/dynamic`
-<insert-image-here>
+TBA
 
 `/cached/item-99`
-<insert-image-here>
+TBA
 
 `/random-delay`
-<insert-image-here>
+TBA
 
 ## Other Features
 
