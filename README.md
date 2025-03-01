@@ -29,7 +29,7 @@ In this benchmark, we compare the performance of Minotaur with NGINX to see how 
 *NOTE*: All benchmarks were conducted on a machine with the following specifications:
 - **CPU**: 12th Gen Intel i3-1215U (8) @ 4.400GHz
 - **RAM**: 16GB
-- **OS**: EndeavourOS (Arch Linux)
+- **OS**: GNU/Linux
 
 Nginx has a few load balancing algorithms that can be tuned to improve performance. For this benchmark, I used all its different algorithms against Minotaurs singular algorithm.
 Read more about their algorithms here: [Nginx Docs](https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/#choosing-a-load-balancing-method)
