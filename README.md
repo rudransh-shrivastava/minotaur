@@ -72,44 +72,7 @@ There were 4 handlers on each one of these servers.
 ![random](https://github.com/user-attachments/assets/1150fc1b-1223-401e-b74b-baff027f191a)
 
 ### Other Nginx Algorithms
-#### Weighted Least Connections
-`/foo`
-TBA
-
-`/dynamic`
-TBA
-
-`/cached/item-99`
-TBA
-
-`/random-delay`
-TBA
-
-#### IP Hash
-`/foo`
-TBA
-
-`/dynamic`
-TBA
-
-`/cached/item-99`
-TBA
-
-`/random-delay`
-TBA
-
-#### Random
-`/foo`
-TBA
-
-`/dynamic`
-TBA
-
-`/cached/item-99`
-TBA
-
-`/random-delay`
-TBA
+I tested all other algorithms as well, the results were similar if not worse for nginx than the default algorithm
 
 ## Other Features
 
